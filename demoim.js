@@ -137,7 +137,7 @@ function shouldCombine(word1, word2) {
 
 function isNumberOrSymbolOrSingleChar(text) {
     const symbols = ['%', '+', '!', '@', '#', '$', '&', '*', '(', ')', '=', '{', '}', '[', ']', ';', ':', '<', '>', ',', '.', '?', '/', '|', '\\', '^', '~', '`'];
-    return text.length === 1 || !isNaN(text) || symbols.some(symbol => text.includes(symbol));
+    return !isNaN(text) || symbols.some(symbol => text.includes(symbol)); // text.length === 1 || 
 }
 
 function combineLine(line) {
