@@ -154,15 +154,28 @@ async function removeTextWithJimp(image, word) {
     const width = x1 - x0;
     const height = y1 - y0 + 2; // เพิ่มระยะระบายทับข้อความ
 
-    const region = image.clone().crop(x0, y0, width, height).blur(10);
-    image.blit(region, x0, y0);
-    // const avgColor = await getAverageColor(image, x0, y0, width, height);
-    // image.scan(x0, y0, width, height, function(x, y, idx) {
-    //     this.bitmap.data[idx] = avgColor.r;
-    //     this.bitmap.data[idx + 1] = avgColor.g;
-    //     this.bitmap.data[idx + 2] = avgColor.b;
-    //     this.bitmap.data[idx + 3] = 255;
-    // });
+    // Debug logs
+    // console.log(`Removing text at bbox: (${x0}, ${y0}) - (${x1}, ${y1}) with width: ${width} and height: ${height}`);
+
+    const imgWidth = image.bitmap.width;
+    const imgHeight = image.bitmap.height;
+    const validX0 = Math.max(0, Math.min(x0, imgWidth - 1));
+    const validY0 = Math.max(0, Math.min(y0, imgHeight - 1));
+    const validX1 = Math.max(0, Math.min(x1, imgWidth));
+    const validY1 = Math.max(0, Math.min(y1, imgHeight));
+    let validWidth = validX1 - validX0;
+    let validHeight = validY1 - validY0;
+
+    if (validHeight + 2 <= imgHeight - validY0) {
+        validHeight += 2;
+    } else {
+        validHeight = imgHeight - validY0;
+    }
+
+    // console.log(`Validated bbox: (${validX0}, ${validY0}) - (${validX1}, ${validY1}) with width: ${validWidth} and height: ${validHeight}`);
+
+    const region = image.clone().crop(validX0, validY0, validWidth, validHeight).blur(10);
+    image.blit(region, validX0, validY0);
 }
 
 async function drawTranslatedText(ctx, jimpImage, word, targetLang) {
