@@ -14,7 +14,7 @@ registerFont(('NotoSansSC-VariableFont_wght.ttf'), { family: 'Noto Sans CJK SC' 
 registerFont(('NotoSansJP-VariableFont_wght.ttf'), { family: 'Noto Sans CJK JP' });
 registerFont(('NotoSansKR-VariableFont_wght.ttf'), { family: 'Noto Sans CJK KR' });
 
-async function translateimages(imageUrl, targetLang) {
+  async function translateimages(imageUrl, targetLang) {
     await downloadImage(imageUrl, imagePath);
 
     let jimpImage = await Jimp.read(imagePath);
@@ -83,6 +83,13 @@ async function picToText(inputFile) {
     );
 }
 
+function calculateRotationAngle(vertices) {
+    const dx = vertices[1].x - vertices[0].x;
+    const dy = vertices[1].y - vertices[0].y;
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    return angle;
+}
+
 function extractWords(words) {
     return words.map(word => ({
         text: word.text,
@@ -91,8 +98,13 @@ function extractWords(words) {
             y0: word.bbox.vertices[0].y,
             x1: word.bbox.vertices[2].x,
             y1: word.bbox.vertices[2].y,
-        }
+        },
+        angle: calculateRotationAngle(word.bbox.vertices)
     }));
+}
+
+function isSkewed(angle, threshold = 10) {
+    return Math.abs(angle) > threshold;
 }
 
 function mergeWords(words) {
@@ -101,7 +113,11 @@ function mergeWords(words) {
     let currentY = null;
 
     for (const word of words) {
-        if (currentY === null || Math.abs(word.bbox.y0 - currentY) <= 10) { // เพิ่มระยะรวมคำ
+        if (isSkewed(word.angle)) {
+            continue;
+        }
+
+        if (currentY === null || Math.abs(word.bbox.y0 - currentY) <= 10) {
             if (currentLine.length === 0 || shouldCombine(currentLine[currentLine.length - 1], word)) {
                 currentLine.push(word);
                 currentY = word.bbox.y0;
@@ -137,8 +153,32 @@ function shouldCombine(word1, word2) {
 
 function isNumberOrSymbolOrSingleChar(text) {
     const symbols = ['%', '+', '!', '@', '#', '$', '&', '*', '(', ')', '=', '{', '}', '[', ']', ';', ':', '<', '>', ',', '.', '?', '/', '|', '\\', '^', '~', '`'];
-    return !isNaN(text) || symbols.some(symbol => text.includes(symbol)); // text.length === 1 || 
+    const thaiRegex = /^[\u0E00-\u0E7F]+$/;
+    const cjkRegex = /^[\u4E00-\u9FFF\u3400-\u4DBF\uAC00-\uD7AF]+$/;
+
+    // if (!isNaN(text)) { // || symbols.some(symbol => text.includes(symbol))
+    //     return true;
+    // }
+
+    if (thaiRegex.test(text) && text.length === 1) {
+        return true;
+    }
+
+    if (cjkRegex.test(text) && text.length === 1) {
+        return false;
+    }
+
+    if (thaiRegex.test(text) && text.length > 1) {
+        return false;
+    }
+
+    if (text.length === 1) {
+        return true;
+    }
+
+    return false;
 }
+
 
 function combineLine(line) {
     const text = line.map(word => word.text).join(' ');
@@ -152,29 +192,20 @@ function combineLine(line) {
 async function removeTextWithJimp(image, word) {
     const { x0, x1, y0, y1 } = word.bbox;
     const width = x1 - x0;
-    const height = y1 - y0 + 2; // เพิ่มระยะระบายทับข้อความ
+    const height = y1 - y0;
 
-    // Debug logs
-    // console.log(`Removing text at bbox: (${x0}, ${y0}) - (${x1}, ${y1}) with width: ${width} and height: ${height}`);
+    const margin = 2;
 
     const imgWidth = image.bitmap.width;
     const imgHeight = image.bitmap.height;
-    const validX0 = Math.max(0, Math.min(x0, imgWidth - 1));
-    const validY0 = Math.max(0, Math.min(y0, imgHeight - 1));
-    const validX1 = Math.max(0, Math.min(x1, imgWidth));
-    const validY1 = Math.max(0, Math.min(y1, imgHeight));
-    let validWidth = validX1 - validX0;
-    let validHeight = validY1 - validY0;
+    const validX0 = Math.max(0, Math.min(x0 - margin, imgWidth - 1));
+    const validY0 = Math.max(0, Math.min(y0 - margin, imgHeight - 1));
+    const validX1 = Math.max(0, Math.min(x1 + margin, imgWidth));
+    const validY1 = Math.max(0, Math.min(y1 + margin, imgHeight));
+    const validWidth = validX1 - validX0;
+    const validHeight = validY1 - validY0;
 
-    if (validHeight + 2 <= imgHeight - validY0) {
-        validHeight += 2;
-    } else {
-        validHeight = imgHeight - validY0;
-    }
-
-    // console.log(`Validated bbox: (${validX0}, ${validY0}) - (${validX1}, ${validY1}) with width: ${validWidth} and height: ${validHeight}`);
-
-    const region = image.clone().crop(validX0, validY0, validWidth, validHeight).blur(10);
+    const region = image.clone().crop(validX0, validY0, validWidth, validHeight).blur(5);
     image.blit(region, validX0, validY0);
 }
 
