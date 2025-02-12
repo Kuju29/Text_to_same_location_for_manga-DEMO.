@@ -34,7 +34,32 @@ log_message("=== เริ่มกระบวนการ OCR ===")
 # 2. ทำ OCR ทีละโมเดล
 # ---------------------------
 
-# (ก) OCR ด้วย docTR (ocr_predictor)
+# (ก) OCR ด้วย EasyOCR
+log_message("[EasyOCR] กำลังประมวลผล OCR...")
+reader_easy = easyocr.Reader(['en'])
+result_easy = reader_easy.readtext(image_path)
+for det in result_easy:
+    bbox_easy, text, conf = det
+    x_coords = [pt[0] for pt in bbox_easy]
+    y_coords = [pt[1] for pt in bbox_easy]
+    x_min = int(min(x_coords))
+    y_min = int(min(y_coords))
+    x_max = int(max(x_coords))
+    y_max = int(max(y_coords))
+    center = ((x_min + x_max) / 2, (y_min + y_max) / 2)
+    detections.append({
+        "text": text,
+        "bbox": (x_min, y_min, x_max, y_max),
+        "center": center,
+        "confidence": conf,
+        "origin": "easyocr"
+    })
+
+log_message(f"[EasyOCR] ตรวจพบ {len(detections)} กล่องข้อความ")
+
+time.sleep(5)
+
+# (ข) OCR ด้วย docTR (ocr_predictor)
 log_message("[docTR] กำลังประมวลผล OCR...")
 model_docTR = ocr_predictor(pretrained=True)
 doc = DocumentFile.from_images(image_path)
@@ -65,7 +90,7 @@ log_message(f"[docTR] ตรวจพบ {len(detections)} กล่องข้
 
 time.sleep(5)
 
-# (ข) OCR ด้วย PaddleOCR
+# (ค) OCR ด้วย PaddleOCR
 log_message("[PaddleOCR] กำลังประมวลผล OCR...")
 ocr_paddle = PaddleOCR(use_angle_cls=True)
 result_paddle = ocr_paddle.ocr(image_path, cls=True)
@@ -90,31 +115,6 @@ for line in result_paddle:
         })
 
 log_message(f"[PaddleOCR] ตรวจพบ {len(detections)} กล่องข้อความ")
-
-time.sleep(5)
-
-# (ค) OCR ด้วย EasyOCR
-log_message("[EasyOCR] กำลังประมวลผล OCR...")
-reader_easy = easyocr.Reader(['en', 'ja'])
-result_easy = reader_easy.readtext(image_path)
-for det in result_easy:
-    bbox_easy, text, conf = det
-    x_coords = [pt[0] for pt in bbox_easy]
-    y_coords = [pt[1] for pt in bbox_easy]
-    x_min = int(min(x_coords))
-    y_min = int(min(y_coords))
-    x_max = int(max(x_coords))
-    y_max = int(max(y_coords))
-    center = ((x_min + x_max) / 2, (y_min + y_max) / 2)
-    detections.append({
-        "text": text,
-        "bbox": (x_min, y_min, x_max, y_max),
-        "center": center,
-        "confidence": conf,
-        "origin": "easyocr"
-    })
-
-log_message(f"[EasyOCR] ตรวจพบ {len(detections)} กล่องข้อความ")
 
 time.sleep(5)
 
