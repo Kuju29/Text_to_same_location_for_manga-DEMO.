@@ -6,6 +6,8 @@ demoim.js
 ![image](https://github.com/Kuju29/Text_to_same_location_for_manga-DEMO./assets/22098092/470da2ce-9902-4d1b-8057-9a2471cbdf54)
 ![image](https://github.com/Kuju29/Text_to_same_location_for_manga-DEMO./assets/22098092/06fd35bd-184a-40eb-8f48-6072379339ef)
 
-easyocr-PaddleOCR.py
-![image](https://github.com/user-attachments/assets/188b1e92-bf3d-4b5f-9a40-650befa28cfb)
-![image](https://github.com/user-attachments/assets/78f5feed-9263-47aa-b3b8-f9afc4d4219c)
+easyocr-PaddleOCR.py\
+![image](https://github.com/user-attachments/assets/78f5feed-9263-47aa-b3b8-f9afc4d4219c)\
+
+docTR_PaddleOCR_EasyOCR.py\
+![image](https://github.com/user-attachments/assets/33443dbb-9dc2-475a-ac4f-1cb414b98e64)
